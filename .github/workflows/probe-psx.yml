@@ -5,17 +5,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          H=(-A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36" --retry 4 --retry-all-errors --retry-delay 3)
-          for t in GHGL SAZEW ASC; do
-            curl -sS -m 30 "${H[@]}" -o $t.html https://dps.psx.com.pk/company/$t
-            echo "=== PAYOUTS $t"
-            python3 - $t <<'PY'
-          import re,sys
-          c=open(sys.argv[1]+'.html').read()
-          i=c.find('id="payouts"'); b=c[i:i+6000]
-          b=re.sub(r'\s+',' ',b); print(b[:2500])
+          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
+          R="--retry 4 --retry-all-errors --retry-delay 3"
+          curl -sS -m 30 -A "$UA" $R -o payouts.html https://dps.psx.com.pk/payouts
+          for t in GHGL SAZEW ASC DCR KHYT; do curl -sS -m 30 -A "$UA" $R -o $t.html https://dps.psx.com.pk/company/$t; done
+          python3 - <<'PY'
+          import re
+          p=open('payouts.html').read()
+          print("=== /payouts size", len(p)); print("tables:", p.count('<table'))
+          b=re.sub(r'<script.*?</script>|<style.*?</style>','',p,flags=re.S); i=b.find('<table'); print(re.sub(r'\s+',' ',b[i:i+2500]) if i>=0 else 'no table')
+          print("script hints:", re.findall(r'["\'](/[A-Za-z_/\-]*payout[^"\']*)["\']',p, re.I)[:10], re.findall(r'url:\s*["\']([^"\']+)',p)[:10])
+          for t in "GHGL SAZEW ASC DCR KHYT".split():
+              c=open(t+'.html').read()
+              rows=re.findall(r'<tr><td>([^<]*)</td><td>([^<]*(?:ividend|ayout|ook [Cc]losure|ntitlement|onus|ight)[^<]*)</td>',c)
+              print("=== ANN", t, len(rows)); [print("  ",r) for r in rows[:6]]
           PY
-          done
-          for u in timeseries/eod/GHGL timeseries/int/GHGL; do
-            echo "=== $u"; curl -sS -m 30 "${H[@]}" -w "\nstatus=%{http_code} size=%{size_download}\n" https://dps.psx.com.pk/$u | head -c 600 || true; echo
-          done
