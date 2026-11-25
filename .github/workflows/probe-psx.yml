@@ -6,9 +6,15 @@ jobs:
     steps:
       - run: |
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
-          mkdir pages
-          curl -sS -m 30 -A "$UA" -o pages/screener.html https://dps.psx.com.pk/screener
-          curl -sS -m 30 -A "$UA" -o pages/SWL.html https://dps.psx.com.pk/company/SWL
-          curl -sS -m 30 -A "$UA" -o pages/DCR.html https://dps.psx.com.pk/company/DCR
-      - uses: actions/upload-artifact@v4
-        with: { name: psx-pages, path: pages }
+          curl -sS -m 30 -A "$UA" -o screener.html https://dps.psx.com.pk/screener
+          curl -sS -m 30 -A "$UA" -o swl.html https://dps.psx.com.pk/company/SWL
+          echo "=== SCREENER tbody"; python3 - <<'PY'
+          import re
+          s=open('screener.html').read()
+          i=s.find('<tbody'); print(re.sub(r'\s+',' ',s[i:i+3500]))
+          print('rows:', s.count('<tr'))
+          print('=== SWL (scripts removed)')
+          c=open('swl.html').read()
+          c=re.sub(r'<script.*?</script>|<style.*?</style>|<svg.*?</svg>','',c,flags=re.S)
+          i=c.find('<body'); c=re.sub(r'\s+',' ',c[i:]); print(len(c)); print(c[:14000])
+          PY
