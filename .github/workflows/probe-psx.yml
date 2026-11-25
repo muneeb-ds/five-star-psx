@@ -1,0 +1,21 @@
+name: Probe PSX portal
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          H=(-A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36" -H "Accept-Encoding: identity")
+          for t in GHGL SAZEW ASC; do
+            curl -sS -m 30 "${H[@]}" -o $t.html https://dps.psx.com.pk/company/$t
+            echo "=== PAYOUTS $t"
+            python3 - $t <<'PY'
+          import re,sys
+          c=open(sys.argv[1]+'.html').read()
+          i=c.find('id="payouts"'); b=c[i:i+6000]
+          b=re.sub(r'\s+',' ',b); print(b[:2500])
+          PY
+          done
+          for u in timeseries/eod/GHGL timeseries/int/GHGL; do
+            echo "=== $u"; curl -sS -m 30 "${H[@]}" -w "\nstatus=%{http_code} size=%{size_download}\n" https://dps.psx.com.pk/$u | head -c 600; echo
+          done
