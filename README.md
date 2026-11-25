@@ -19,5 +19,4 @@ cd web && npm install && npm run dev
 1. Turso: `turso db create five-star-psx`, then `turso db tokens create five-star-psx`.
 2. Vercel: import this repo, set Root Directory to `web`, add env vars `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`.
 3. GitHub repo secrets: the same two names (used by the ingest workflow).
-4. Load the schema and first review once from your machine:
-   `TURSO_DATABASE_URL=... TURSO_AUTH_TOKEN=... python jobs/ingest.py fixtures/PSX-N-1402.pdf --url https://dps.psx.com.pk/download/attachment/289209-1.pdf`
+4. Load the data without a local setup: GitHub repo → Actions → "Ingest PSX notice" → Run workflow (defaults are correct for PSX/N-1402). Then redeploy on Vercel or wait 5 minutes.

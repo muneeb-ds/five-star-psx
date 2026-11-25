@@ -2,9 +2,14 @@ name: Ingest PSX notice
 on:
   workflow_dispatch:
     inputs:
-      pdf_url:
-        description: URL of the PSX notice PDF (Recomposition of PSX-KMI All Share Islamic Index)
+      pdf:
+        description: Path in this repo or URL of the PSX notice PDF
         required: true
+        default: fixtures/PSX-N-1402.pdf
+      source_url:
+        description: Public link to show for the PDF on the site
+        required: false
+        default: https://dps.psx.com.pk/download/attachment/289209-1.pdf
 jobs:
   ingest:
     runs-on: ubuntu-latest
@@ -14,8 +19,16 @@ jobs:
         with: { python-version: "3.12" }
       - run: pip install -r requirements.txt
       - run: python -m pytest -q tests
-      - run: curl -fsSL -o notice.pdf "${{ inputs.pdf_url }}"
-      - run: python jobs/ingest.py notice.pdf --url "${{ inputs.pdf_url }}"
+      - name: Fetch PDF
+        run: |
+          case "$PDF" in
+            http*) curl -fsSL -o notice.pdf "$PDF" ;;
+            *) cp "$PDF" notice.pdf ;;
+          esac
         env:
+          PDF: ${{ inputs.pdf }}
+      - run: python jobs/ingest.py notice.pdf --url "$SRC"
+        env:
+          SRC: ${{ inputs.source_url }}
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
