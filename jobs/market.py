@@ -95,7 +95,11 @@ def parse_company(html):
 
 def get(client, url, tries=4):
     for i in range(tries):
-        r = client.get(url)
+        try:
+            r = client.get(url)
+        except httpx.TransportError:
+            time.sleep(3 * (i + 1))
+            continue
         if r.status_code in (403, 429, 503):
             time.sleep(5 * (i + 1))
             continue
