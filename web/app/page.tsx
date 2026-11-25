@@ -22,9 +22,9 @@ export default async function Home() {
       {rev.pdf_url && <>· <a href={rev.pdf_url}>PSX notice (PDF)</a></>}</p>
     {dropped.length > 0 && <div className="banner">Latest review: {dropped.length} dropped. <Link href="/changes">See what changed</Link></div>}
     <div className="table"><table>
-      <thead><tr><th>Ticker</th><th>Company</th><th>Price</th><th>Day %</th><th>Market cap</th><th>Since</th><th></th></tr></thead>
+      <thead><tr><th>Ticker</th><th>Company</th><th>Sector</th><th>Price</th><th>Day %</th><th>Market cap</th><th>Since</th><th></th></tr></thead>
       <tbody>{rows.map((r: any) => (<tr key={r.ticker}>
-        <td><Link href={`/company/${r.ticker}`}><b>{r.ticker}</b></Link></td><td>{r.name}</td>
+        <td><Link href={`/company/${r.ticker}`}><b>{r.ticker}</b></Link></td><td>{r.name}</td><td>{r.sector ?? "–"}</td>
         <td>{fmt(r.price)}</td><td>{fmt(r.chg, 2, "%")}</td><td>{fmt(r.mcap, 0)}</td><td>{r.since}</td>
         <td><span className={`badge ${r.kind}`}>{r.kind === "stayed" ? "" : r.kind}</span></td></tr>))}</tbody>
     </table></div>
