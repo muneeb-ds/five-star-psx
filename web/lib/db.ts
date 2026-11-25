@@ -6,8 +6,14 @@ const client = createClient({
 });
 
 export async function q<T = Record<string, any>>(sql: string, args: any[] = []): Promise<T[]> {
-  const r = await client.execute({ sql, args });
-  return r.rows.map((row) => ({ ...row })) as T[];
+  try {
+    const r = await client.execute({ sql, args });
+    return r.rows.map((row) => ({ ...row })) as T[];
+  } catch (e: any) {
+    // Empty database (schema not loaded yet): render empty pages instead of failing the build.
+    if (String(e?.message).includes("no such table")) return [];
+    throw e;
+  }
 }
 
 export async function latestReview() {
