@@ -31,3 +31,5 @@ CREATE TABLE IF NOT EXISTS dividends (id INTEGER PRIMARY KEY AUTOINCREMENT, tick
 CREATE TABLE IF NOT EXISTS announcements (ticker TEXT, date TEXT, title TEXT, url TEXT, PRIMARY KEY (ticker, date, title));
 CREATE TABLE IF NOT EXISTS alhilal_status (ticker TEXT, report_period TEXT, status TEXT, failed_ratio TEXT, pdf_url TEXT, PRIMARY KEY (ticker, report_period));
 CREATE TABLE IF NOT EXISTS job_runs (id INTEGER PRIMARY KEY AUTOINCREMENT, job TEXT, started_at TEXT, ok INTEGER, message TEXT);
+
+CREATE TABLE IF NOT EXISTS dividend_events (ticker TEXT, event_date TEXT, kind TEXT, stage TEXT, title TEXT, PRIMARY KEY (ticker, event_date, title));

@@ -46,7 +46,9 @@ def parse_screener(html):
             "market_cap": _f(tds[3].get("data-order")),
             "close": _f(tds[4].get("data-order")),
             "change_pct": _f(tds[5].get("data-order")),
+            "change_1y": _f(tds[6].get("data-order")),
             "pe": _f(tds[7].get("data-order")),
+            "div_yield": _f(tds[8].get("data-order")),
             "free_float_shares": _f(tds[9].get("data-order")),
             "volume_30d": _f(tds[10].get("data-order")),
         }
@@ -91,6 +93,16 @@ def parse_company(html):
     for tr in soup.select("#payouts tbody tr"):
         res["payouts"].append([td.get_text(" ", strip=True) for td in tr.find_all("td")])
     return res
+
+
+def dividend_event(title):
+    """('interim'|'final'|'other', 'credit'|'declaration'|'notice') for dividend announcements, else None."""
+    t = title.lower()
+    if "dividend" not in t:
+        return None
+    kind = "interim" if "interim" in t else "final" if "final" in t else "other"
+    stage = "credit" if "credit" in t else "declaration" if "declar" in t else "notice"
+    return kind, stage
 
 
 def get(client, url, tries=4):
@@ -142,15 +154,24 @@ def run(db):
             continue
         s = screener.get(t, {})
         st = [
-            ("UPDATE companies SET sector=COALESCE(?,sector) WHERE ticker=?", (c["sector"], t)),
-            ("INSERT OR REPLACE INTO company_snapshot(ticker,fetched_at,market_cap,pe,free_float,high_52w,low_52w) VALUES(?,?,?,?,?,?,?)",
-             (t, now, s.get("market_cap"), s.get("pe"), c["free_float_pct"], c["high_52w"], c["low_52w"])),
+            ("UPDATE companies SET sector=COALESCE(?,sector), psx_tag=? WHERE ticker=?", (c["sector"], c["psx_tag"], t)),
+            ("INSERT OR REPLACE INTO company_snapshot(ticker,fetched_at,market_cap,pe,free_float,high_52w,low_52w,div_yield,change_1y) VALUES(?,?,?,?,?,?,?,?,?)",
+             (t, now, s.get("market_cap"), s.get("pe"), c["free_float_pct"], c["high_52w"], c["low_52w"], s.get("div_yield"), s.get("change_1y"))),
         ]
         for y, sec, item, v in c["financials"]:
             st.append(("INSERT OR REPLACE INTO financials(ticker,year,section,item,value,unit) VALUES(?,?,?,?,?,?)", (t, y, sec, item, v, "000 PKR (EPS in PKR)")))
         for d, title in c["announcements"][:60]:
             st.append(("INSERT OR IGNORE INTO announcements(ticker,date,title,url) VALUES(?,?,?,?)", (t, d, title, f"{BASE}/company/{t}#announcements")))
+        for d, title in c["announcements"]:
+            ev = dividend_event(title)
+            if ev:
+                st.append(("INSERT OR IGNORE INTO dividend_events(ticker,event_date,kind,stage,title) VALUES(?,?,?,?,?)", (t, d, ev[0], ev[1], title)))
         db.batch(st)
+    try:
+        from dividends import import_manual
+        import_manual(db)
+    except Exception as e:  # noqa: BLE001
+        errors.append(f"dividends.csv: {e}")
     db.batch([("INSERT INTO job_runs(job,started_at,ok,message) VALUES(?,?,?,?)",
                ("market", started, int(not errors), "; ".join(errors)[:900] or f"ok: {len(tracked)} companies"))])
     print("done", len(tracked), "companies;", len(errors), "problems", errors[:10])

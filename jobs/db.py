@@ -55,3 +55,12 @@ class DB:
         here = os.path.dirname(__file__)
         sql = open(os.path.join(here, "schema.sql")).read()
         self.batch([(s.strip(), ()) for s in sql.split(";") if s.strip()])
+        for stmt in (
+            "ALTER TABLE company_snapshot ADD COLUMN div_yield REAL",
+            "ALTER TABLE company_snapshot ADD COLUMN change_1y REAL",
+            "ALTER TABLE companies ADD COLUMN psx_tag TEXT",
+        ):
+            try:  # additive migrations; fails harmlessly if the column already exists
+                self.batch([(stmt, ())])
+            except Exception:  # noqa: BLE001
+                pass

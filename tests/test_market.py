@@ -19,3 +19,11 @@ def test_company():
     assert (c["sector"], c["low_52w"], c["high_52w"], c["free_float_pct"], c["psx_tag"]) == ("INSURANCE", 344.7, 421.3, 32.97, "NON-COMPLIANT")
     assert c["financials"] == [(2025, "Annual", "EPS", -2.38), (2024, "Annual", "EPS", 1000.5)]
     assert c["announcements"] == [("2026-08-25", "Transmission of 2nd Quarter")]
+
+
+def test_dividend_event():
+    from market import dividend_event
+    assert dividend_event("Credit of Interim Cash Dividend Ghani Glass Ltd ") == ("interim", "credit")
+    assert dividend_event("DCR | Dolmen City REIT Declaration of Interim Dividend ") == ("interim", "declaration")
+    assert dividend_event("Credit of final cash dividend for the year ended June 30, 2026") == ("final", "credit")
+    assert dividend_event("Transmission of Annual Report") is None
