@@ -1,0 +1,13 @@
+name: Probe PSX portal
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
+          for u in screener company/SWL; do
+            echo "=== $u"; curl -sS -m 30 -A "$UA" -o out.html -w "status=%{http_code} size=%{size_download}\n" "https://dps.psx.com.pk/$u" || true
+            head -c 3000 out.html | tr -s ' \n' ' '; echo
+            echo "--- tables/headers"; grep -oE '<(table|th)[^>]*>[^<]{0,40}' out.html | head -40
+          done
