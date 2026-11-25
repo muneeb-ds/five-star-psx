@@ -6,15 +6,17 @@ jobs:
     steps:
       - run: |
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
-          curl -sS -m 30 -A "$UA" -o screener.html https://dps.psx.com.pk/screener
           curl -sS -m 30 -A "$UA" -o swl.html https://dps.psx.com.pk/company/SWL
-          echo "=== SCREENER tbody"; python3 - <<'PY'
+          python3 - <<'PY'
           import re
-          s=open('screener.html').read()
-          i=s.find('<tbody'); print(re.sub(r'\s+',' ',s[i:i+3500]))
-          print('rows:', s.count('<tr'))
-          print('=== SWL (scripts removed)')
           c=open('swl.html').read()
-          c=re.sub(r'<script.*?</script>|<style.*?</style>|<svg.*?</svg>','',c,flags=re.S)
-          i=c.find('<body'); c=re.sub(r'\s+',' ',c[i:]); print(len(c)); print(c[:14000])
+          print("=== IDS", sorted(set(re.findall(r'id="([^"]+)"',c)))[:80])
+          b=re.sub(r'<script.*?</script>|<style.*?</style>|<svg.*?</svg>','',c,flags=re.S)
+          b=re.sub(r'<(img|link|meta)[^>]*>','',b)
+          b=re.sub(r' (style|href|onclick|target|src|data-order|data-filter)="[^"]*"','',b)
+          b=re.sub(r'\s+',' ',b)
+          for kw in ['quote__','Market Cap','52-WEEK','Financials','Announcements','Payouts','Ratios','Annual','EPS']:
+              for m in list(re.finditer(kw,b))[:1]:
+                  print('\n=== KW',kw, m.start()); print(b[max(0,m.start()-300):m.start()+1800])
+          print('\n=== SCRIPT URLS', re.findall(r'(?:fetch|get|post|ajax)\(["\']([^"\']+)',c)[:30], re.findall(r'["\'](/[a-z\-]+/[A-Za-z\-]+[^"\']*)["\']',c)[:40])
           PY
